@@ -3,7 +3,7 @@
  * The common/header file of blog module of chanzhiEPS.
  *
  * @copyright   Copyright 2009-2015 青岛易软天创网络科技有限公司(QingDao Nature Easy Soft Network Technology Co,LTD, www.cnezsoft.com)
- * @license     ZPL (http://zpl.pub/page/zplv11.html)
+ * @license     ZPLV1 (http://www.chanzhi.org/license/)
  * @author      Xiying Guan <guanxiying@xirangit.com>
  * @package     blog
  * @version     $Id$
@@ -12,7 +12,7 @@
 ?>
 <?php
 if($extView = $this->getExtViewFile(__FILE__)){include $extView; return helper::cd();}
-$webRoot   = isset($config->site->cdn) ? $config->site->cdn . $config->webRoot : $config->webRoot;
+$webRoot   = $config->webRoot;
 $jsRoot    = $webRoot . "js/";
 $themeRoot = $webRoot . "template/default/theme/";
 $navs = $this->tree->getChildren(0, 'blog');
@@ -45,15 +45,15 @@ $navs = $this->tree->getChildren(0, 'blog');
   css::import($jsRoot    . 'jquery/treeview/min.css');
 
   /* Import customed css file if it exists. */
-  $siteCustomCssFile = $this->app->getDataRoot() . 'css' . DS . $this->config->site->code . DS . $this->config->template->name . DS . $this->config->template->theme . DS . 'style.css';
+  $siteCustomCssFile = $this->app->getDataRoot() . 'css' . DS . $this->config->site->code . DS . $this->config->template->{$this->device}->name . DS . $this->config->template->{$this->device}->theme . DS . 'style.css';
   if($this->config->multi && file_exists($siteCustomCssFile))
   {
-      css::import(sprintf($webRoot . 'data/css/%s/%s/%s/style.css?' . $this->config->template->customVersion, $config->site->code, $config->template->name, $config->template->theme));
+      css::import(sprintf($webRoot . 'data/css/%s/%s/%s/style.css?' . $this->config->template->customVersion, $config->site->code, $config->template->{$this->device}->name, $config->template->{$this->device}->theme));
   }
   else
   {
-      $customCssFile = $this->app->getDataRoot() . 'css' . DS . $this->config->template->name . DS . $this->config->template->theme . DS . 'style.css';
-      if(file_exists($customCssFile)) css::import(sprintf($webRoot . 'data/css/%s/%s/style.css?' . $this->config->template->customVersion, $config->template->name, $config->template->theme));
+      $customCssFile = $this->app->getDataRoot() . 'css' . DS . $this->config->template->{$this->device}->name . DS . $this->config->template->{$this->device}->theme . DS . 'style.css';
+      if(file_exists($customCssFile)) css::import(sprintf($webRoot . 'data/css/%s/%s/style.css?' . $this->config->template->customVersion, $config->template->{$this->device}->name, $config->template->{$this->device}->theme));
        
   }
 
@@ -77,10 +77,9 @@ $navs = $this->tree->getChildren(0, 'blog');
   echo html::rss($this->createLink('rss', 'index', '', '', 'xml'), $config->site->name);
   js::set('lang', $lang->js);
   
-	/*codepretty*/
-  	css::import($jsRoot    . 'prettify/prettify.css');
-	js::import($jsRoot . 'prettify/prettify.js');
-
+  /*codepretty*/
+  css::import($jsRoot    . 'prettify/prettify.css');
+  js::import($jsRoot . 'prettify/prettify.js');
 ?>
 <?php
 if(!empty($config->oauth->sina)) $sina = json_decode($config->oauth->sina);
@@ -114,7 +113,12 @@ else
 }
 ?>
 <![endif]-->
-<?php if(isset($this->config->site->basestyle)) css::internal($this->config->site->basestyle);?>
+<?php
+$template   = $this->config->template->{$this->device}->name ? $this->config->template->{$this->device}->name : 'default';
+$theme      = $this->config->template->{$this->device}->theme ? $this->config->template->{$this->device}->theme : 'default';
+$baseCustom = isset($this->config->template->custom) ? json_decode($this->config->template->custom, true) : array(); 
+if(!empty($baseCustom[$template][$theme]['js'])) js::execute($baseCustom[$template][$theme]['js']);
+?>
 <script>
 $(function(){
 	$('pre.prettyprint').addClass('linenums')
@@ -129,8 +133,9 @@ $(function(){
     <div id='headNav'><div class='wrapper'><?php echo commonModel::printTopBar();?></div></div>
     <div id='headTitle'>
       <div class="wrapper">
-        <?php if(isset($config->site->logo)):?>
-        <?php $logo = json_decode($config->site->logo);?>
+        <?php $logoSetting = isset($this->config->site->logo) ? json_decode($this->config->site->logo) : new stdclass();?>
+        <?php $logo = isset($logoSetting->$template->themes->$theme) ? $logoSetting->$template->themes->$theme : (isset($logoSetting->$template->themes->all) ? $logoSetting->$template->themes->all : false);?>
+        <?php if($logo):?>
         <div id='siteLogo'>
           <?php echo html::a($this->config->webRoot, html::image($logo->webPath, "class='logo' title='{$this->config->company->name}'"));?>
         </div>
